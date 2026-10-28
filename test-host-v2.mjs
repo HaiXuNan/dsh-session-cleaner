@@ -1,7 +1,10 @@
 /**
- * Offline harness for the session-cleaner host half, v2: covers the new
- * order (files first, registry last), the 410 guard for a missing log, and
- * the startup reconciliation that heals stale archive entries.
+ * Offline harness for the session-cleaner host half.
+ *
+ * Covers the file-first order, the 410 guard for a missing log, the startup
+ * reconciliation that heals stale archive entries, and the activity rule:
+ * an archived session that is merely resident in memory is deletable, while
+ * one that still has running work is refused.
  *
  * Run: node test-host-v2.mjs
  */
@@ -37,9 +40,18 @@ const registry = {
   unpinSession: async () => {},
 }
 
+/** Activity the fake `workspace/session-activity` waterfall reports. */
+let activity = []
+
 let route
 const ctx = {
-  get: (name) => (name === 'workspaceRegistry' ? registry : undefined),
+  get: (name) => {
+    if (name === 'workspaceRegistry') return registry
+    // Simulate "archived but still resident": the live store knows this id.
+    if (name === 'sessions') return { get: (id) => (id === SESSION_ID ? { id } : undefined) }
+    return undefined
+  },
+  waterfall: async (_event, _payload, fallback) => (activity.length > 0 ? activity : fallback()),
   effect: (factory) => { factory() },
   logger: { warn: () => {}, info: () => {} },
   webServer: { register: (value) => { route = value; return () => {} } },
@@ -89,8 +101,15 @@ registry.archivedSessionIds.push(GHOST_ID)
 const missingLog = await call('POST', '/session-cleaner/delete', { sessionId: GHOST_ID })
 check('refuses archived id with no log', missingLog.status === 410 && missingLog.body.error.code === 'log-missing', missingLog.body)
 
+// Running work still blocks the delete.
+activity = [{ kind: 'turn' }, { kind: 'job' }]
+const busy = await call('POST', '/session-cleaner/delete', { sessionId: SESSION_ID })
+check('refuses a session with running work', busy.status === 409 && busy.body.error.code === 'session-active', busy.body)
+
+// Resident-but-idle (the archive-then-delete flow) must now succeed.
+activity = []
 const removed = await call('POST', '/session-cleaner/delete', { sessionId: SESSION_ID })
-check('delete ok', removed.status === 200 && removed.body.value.removed.length === 1, removed.body)
+check('deletes a resident-but-idle session', removed.status === 200 && removed.body.value.removed.length === 1, removed.body)
 check('detached from workspaces', detached.includes(SESSION_ID), detached)
 check('dropped from archive set', !registry.archivedSessionIds.includes(SESSION_ID), registry.archivedSessionIds)
 check('session dir removed', await stat(sessionDir).then(() => false, () => true))

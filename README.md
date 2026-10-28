@@ -10,7 +10,7 @@ DSH 0.2.1-rc.3 只提供「归档」，没有删除：工作区 RPC 里只有 `a
 
 ## 行为
 
-- **只对已归档会话出现**。正在运行的会话不会显示这一项，宿主端也会二次拒绝。
+- **只对已归档会话出现**。宿主端会再次校验归档状态；只有「还有进行中的工作」（回合、子智能体、后台任务、定时提醒）时才拒绝删除。归档后会话仍驻留在内存里是正常的，不影响删除。
 - 删除范围：
   - `~/.dsh/sessions/<workspace>/session-<id>/`（会话日志）
   - `~/.dsh/storages/session_projcache/sessions/session-<id>.json`（投影缓存）
@@ -73,7 +73,7 @@ dsh plugin --profile desktop add github:HaiXuNan/dsh-session-cleaner
 | `GET` | `/session-cleaner/archived` | 返回当前归档集 |
 | `POST` | `/session-cleaner/delete` | `{ "sessionId": "session-<uuid>" }`，删除该已归档会话 |
 
-错误码：`invalid-session-id`、`not-archived`、`session-live`、`log-missing`、`registry-unavailable`。
+错误码：`invalid-session-id`、`not-archived`、`session-active`、`log-missing`、`registry-unavailable`。
 
 ## 开发
 

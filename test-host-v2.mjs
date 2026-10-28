@@ -21,7 +21,11 @@ const GHOST_ID = 'session-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
 const home = await mkdtemp(join(tmpdir(), 'dsh-cleaner-'))
 process.env.DSH_HOME = home
 
-const sessionDir = join(home, 'sessions', '--C-Users-Administrator-Desktop--', SESSION_ID)
+// A workspace slug is an opaque directory name whose shape differs per OS
+// (`--C-Users-me-Desktop--` on Windows, `--home-me-project--` elsewhere). The
+// plugin never guesses it, so the harness uses a POSIX-shaped one on every
+// platform to keep that independence honest.
+const sessionDir = join(home, 'sessions', '--home-tester-project--', SESSION_ID)
 await mkdir(sessionDir, { recursive: true })
 await writeFile(join(sessionDir, 'session.v4.jsonl.zstd'), 'log')
 const cacheDir = join(home, 'storages', 'session_projcache', 'sessions')
@@ -106,10 +110,13 @@ activity = [{ kind: 'turn' }, { kind: 'job' }]
 const busy = await call('POST', '/session-cleaner/delete', { sessionId: SESSION_ID })
 check('refuses a session with running work', busy.status === 409 && busy.body.error.code === 'session-active', busy.body)
 
-// Resident-but-idle (the archive-then-delete flow) must now succeed.
+// Resident-but-idle (the archive-then-delete flow) must now succeed — and the
+// id is sent in uppercase on purpose: Linux is case-sensitive while Windows
+// and macOS are not, so the host canonicalises before touching the filesystem.
 activity = []
-const removed = await call('POST', '/session-cleaner/delete', { sessionId: SESSION_ID })
-check('deletes a resident-but-idle session', removed.status === 200 && removed.body.value.removed.length === 1, removed.body)
+const removed = await call('POST', '/session-cleaner/delete', { sessionId: SESSION_ID.toUpperCase() })
+check('deletes a resident-but-idle session (uppercase id)', removed.status === 200 && removed.body.value.removed.length === 1, removed.body)
+check('reports the canonical lowercase id', removed.status === 200 && removed.body.value.sessionId === SESSION_ID, removed.body)
 check('detached from workspaces', detached.includes(SESSION_ID), detached)
 check('dropped from archive set', !registry.archivedSessionIds.includes(SESSION_ID), registry.archivedSessionIds)
 check('session dir removed', await stat(sessionDir).then(() => false, () => true))

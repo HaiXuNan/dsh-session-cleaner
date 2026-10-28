@@ -1,0 +1,9 @@
+# Normalise line endings across platforms so a Windows checkout, a macOS
+# checkout and a Linux checkout of this plugin are byte-identical (the repo
+# already stores LF; this keeps `core.autocrlf` from changing that on Windows).
+* text=auto eol=lf
+
+# Keep binary assets untouched by the text conversion above.
+*.png binary
+*.jpg binary
+*.ico binary

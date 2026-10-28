@@ -1,10 +1,13 @@
 {
   "name": "dsh-session-cleaner",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "DSH plugin: delete archived sessions from the sidebar session menu",
   "type": "module",
   "main": "lib/index.js",
+  "scripts": {
+    "test": "node test-host-v2.mjs && node test-host.mjs"
+  },
   "exports": {
     ".": {
       "default": "./lib/index.js"

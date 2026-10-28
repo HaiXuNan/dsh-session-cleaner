@@ -18,7 +18,11 @@ const plainId = 'session-99999999-8888-7777-6666-555555555555'
 const home = await mkdtemp(join(tmpdir(), 'dsh-cleaner-'))
 process.env.DSH_HOME = home
 
-const sessionDir = join(home, 'sessions', '--C-Users-Administrator-Desktop--', SESSION_ID)
+// A workspace slug is an opaque directory name whose shape differs per OS
+// (`--C-Users-me-Desktop--` on Windows, `--home-me-project--` elsewhere). The
+// plugin never guesses it, so the harness uses a POSIX-shaped one on every
+// platform to keep that independence honest.
+const sessionDir = join(home, 'sessions', '--home-tester-project--', SESSION_ID)
 await mkdir(sessionDir, { recursive: true })
 await writeFile(join(sessionDir, 'session.v4.jsonl.zstd'), 'log')
 const cacheDir = join(home, 'storages', 'session_projcache', 'sessions')
@@ -72,7 +76,7 @@ const listed = await call('GET', '/session-cleaner/archived')
 check('list archived', listed.status === 200 && listed.body.value.archivedSessionIds.length === 2, listed.body)
 
 const guarded = await call('POST', '/session-cleaner/delete', { sessionId: plainId })
-check('refuses non-archived? (it is archived here)', guarded.status === 200, guarded.body)
+check('refuses archived id with no log', guarded.status === 410 && guarded.body.error.code === 'log-missing', guarded.body)
 
 const rejected = await call('POST', '/session-cleaner/delete', { sessionId: '../../etc' })
 check('rejects traversal id', rejected.status === 400 && rejected.body.error.code === 'invalid-session-id', rejected.body)

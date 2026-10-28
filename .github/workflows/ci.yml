@@ -1,0 +1,34 @@
+# Cross-platform contract test: the plugin must behave identically on Windows,
+# macOS and Linux, so every push runs the same offline suites on all three.
+#
+# The package has no dependencies, so there is nothing to install — `npm test`
+# runs both harnesses, each in its own throwaway DSH_HOME.
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: ${{ matrix.os }} · node ${{ matrix.node }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: ['22.x', '24.x']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Offline host tests
+        run: npm test

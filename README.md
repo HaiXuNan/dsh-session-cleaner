@@ -21,12 +21,28 @@ DSH 0.2.1-rc.3 只提供「归档」，没有删除：工作区 RPC 里只有 `a
 
 ## 安装
 
-本插件是按 DSH 桌面端 0.2.1-rc.3 的 profile 机制手装的，不经过插件市场。
+插件以「组合包（bundle）」形式发布：包内自带 `cordis.patch.yml`，`dsh plugin add` 选中它时会自动挂载，不需要手改 profile 配置。
 
-1. 把整个目录复制到 profile 的 `node_modules` 下：
+### 方式一：官方安装命令（推荐）
 
-   ```text
-   ~/.dsh/profiles/desktop/node_modules/dsh-session-cleaner/
+需要本机有 DSH CLI（`npm i -g @deepseek-ai/dsh`，或使用桌面端自带的 `dsh`）：
+
+```bash
+dsh plugin --profile desktop add github:HaiXuNan/dsh-session-cleaner
+```
+
+没有 CLI 也可以用 Web 的「插件」页：侧栏 → 插件 → 安装，spec 填 `github:HaiXuNan/dsh-session-cleaner`。
+
+装完重启 DSH（未启用 HMR 时，新组合包在重启后生效）。
+
+### 方式二：手动安装（不依赖 CLI）
+
+1. 克隆到 profile 的 `node_modules`（Windows 下把 `~` 换成 `%USERPROFILE%`）：
+
+   ```bash
+   mkdir -p ~/.dsh/profiles/desktop/node_modules
+   git clone https://github.com/HaiXuNan/dsh-session-cleaner.git \
+     ~/.dsh/profiles/desktop/node_modules/dsh-session-cleaner
    ```
 
 2. 在 `~/.dsh/profiles/desktop/cordis.patch.yml` 末尾追加：
@@ -39,7 +55,14 @@ DSH 0.2.1-rc.3 只提供「归档」，没有删除：工作区 RPC 里只有 `a
 
 3. 完全退出并重新启动 DSH。
 
+> 两种方式**不要同时使用**：组合包方式已经会插入 `id: session-cleaner` 这一行，手写一遍会因重复 id 导致加载失败。从手动切到组合包方式时，先删掉 profile `cordis.patch.yml` 里的那段 `insert`。
+
 侧栏筛选切到「全部对话（显示已归档）」或「仅显示已归档」，点归档会话右侧的 ⋯，就能看到红色的「删除会话」。
+
+### 升级
+
+- 组合包方式：插件页里更新，或 `dsh plugin --profile desktop remove dsh-session-cleaner` 后重新 `add`。
+- 手动方式：进入插件目录 `git pull`，然后重启 DSH。
 
 ## 接口
 

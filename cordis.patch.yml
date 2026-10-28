@@ -1,0 +1,12 @@
+# dsh-session-cleaner bundle patch
+#
+# `dsh plugin add` (or the Web plugin page) selects this package as a profile
+# bundle; boot merges THIS layer and mounts the host plugin row. Nothing else
+# has to be edited in the profile.
+#
+# Manual installs instead add the same row to the profile's own
+# cordis.patch.yml — never both: two rows with the id `session-cleaner` fail
+# the loader.
+- insert:
+    - id: session-cleaner
+      name: dsh-session-cleaner

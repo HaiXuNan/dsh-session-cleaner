@@ -2,7 +2,7 @@
   "name": "dsh-session-cleaner",
   "version": "0.1.0",
   "private": true,
-  "description": "Delete archived DSH sessions from the sidebar session menu",
+  "description": "DSH plugin: delete archived sessions from the sidebar session menu",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -16,6 +16,9 @@
   },
   "dsh": {
     "manifestVersion": 1,
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
     "client": {
       "platform": "web",
       "inject": [
